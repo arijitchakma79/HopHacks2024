@@ -25,13 +25,14 @@ class ImagePyramid:
         for i in range(self.levels - 1):
             next_gaussian = self.gaussian_pyramid[i + 1]
 
-            
+            # Ensure the upsampled image matches the size of the previous Gaussian level
             gaussian_expanded = cv2.pyrUp(next_gaussian, dstsize=(self.gaussian_pyramid[i].shape[1], self.gaussian_pyramid[i].shape[0]))
 
-           
+            # Subtract the expanded image from the current level
             laplacian = cv2.subtract(self.gaussian_pyramid[i], gaussian_expanded)
             self.laplacian_pyramid.append(laplacian)
 
+        # The last level of the Laplacian pyramid is the same as the last level of the Gaussian pyramid
         self.laplacian_pyramid.append(self.gaussian_pyramid[-1])
 
 
@@ -58,3 +59,12 @@ class ImagePyramid:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+# Usage example:
+image = cv2.imread('new_zealand_lake.jpg')
+image_pyramid = ImagePyramid(image, levels=6)
+image_pyramid.build_gaussian_pyramid()
+image_pyramid.build_laplacian_pyramid()
+
+print(image_pyramid.get_gaussian_pyramid())
+print(image_pyramid.get_laplacian_pyramid())
+image_pyramid.show_pyramids()
