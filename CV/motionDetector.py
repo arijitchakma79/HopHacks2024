@@ -34,7 +34,7 @@ class MotionDetectionWithPyramid:
 
             # Compute the absolute difference between the current and previous levels
             frame_diff = cv2.absdiff(current_gray, previous_gray)
-
+            
             # Apply threshold to focus on significant changes
             _, thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
 
