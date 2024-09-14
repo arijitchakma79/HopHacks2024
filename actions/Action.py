@@ -9,5 +9,5 @@ class Action(ABC):
         return True
     
     @abstractmethod
-    def perform(self, robot):
+    def perform(self, robot, audio):
         pass

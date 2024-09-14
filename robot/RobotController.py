@@ -1,6 +1,6 @@
 from robot.MotorController import MotorController, MotorDirection
-from gpiozero import LED
-from gpiozero import Button
+from gpiozero import LED, Button, DistanceSensor
+import time
 
 class RobotController:
     def __init__(self) -> None:
@@ -12,6 +12,9 @@ class RobotController:
 
         self.__button1 = Button(2)
         self.__button2 = Button(3)
+
+        self.__obstacleSensor = DistanceSensor(22, 4)
+        self.__floorSensor = DistanceSensor(26, 5)
 
     def turnOnPowerLED(self):
         self.__powerLED.on()
@@ -70,3 +73,28 @@ class RobotController:
     def moveRightMotor(self, speed, direction):
         self.__rightMotor.setDirection(direction)
         self.__rightMotor.setSpeed(speed)
+
+    def getObstacleDistance(self):
+        return self.__obstacleSensor.distance
+    
+    def getFloorDistance(self):
+        return self.__floorSensor.distance
+
+    def safeWait(self, milliseconds):
+        warningCount = 0
+        for t in range(milliseconds):
+            time.sleep(0.001)
+            
+            print(self.getObstacleDistance())
+            if(self.__leftMotor.getDirection() == MotorDirection.Forward and self.__rightMotor.getDirection() == MotorDirection.Forward): 
+                if(self.getObstacleDistance() < 0.35):
+                    warningCount+=1
+
+                #if(self.getFloorDistance() > 0.3):
+                #    warningCount+=1
+            
+            if(warningCount > 25):
+                    self.stop()
+                    break
+
+           

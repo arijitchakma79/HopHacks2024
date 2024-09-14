@@ -22,6 +22,9 @@ class MotorController:
     def setDirection(self, direction):
         self.__motorDirection = direction
 
+    def getDirection(self):
+        return self.__motorDirection
+
     def stop(self):
         self.__forwardPWM.value = 0
         self.__backwardPWM.value = 0
