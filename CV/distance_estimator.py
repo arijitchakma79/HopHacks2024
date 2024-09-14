@@ -12,6 +12,10 @@ Known_width = 14.3  # centimeters (average face width)
 # Hardcoded focal length (you can adjust this based on experimentation or known camera specs)
 Focal_length = 615  # This value is assumed, you can experiment with this based on your setup
 
+# Define minimum and maximum distances for normalization (in centimeters)
+min_distance = 20  # Closest distance to the camera (e.g., 20 cm)
+max_distance = 200  # Farthest distance from the camera (e.g., 200 cm)
+
 # Color and Font settings
 GREEN = (0, 255, 0)
 RED = (0, 0, 255)
@@ -19,9 +23,11 @@ BLACK = (0, 0, 0)
 fonts = cv2.FONT_HERSHEY_COMPLEX
 
 class FindDistance:
-    def __init__(self, known_width=14.3, focal_length=615):
+    def __init__(self, known_width=14.3, focal_length=615, min_dist=20, max_dist=200):
         self.known_width = known_width
         self.focal_length = focal_length
+        self.min_dist = min_dist
+        self.max_dist = max_dist
         self.face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.75)
 
     def distance_finder(self, real_face_width, face_width_in_frame):
@@ -33,6 +39,14 @@ class FindDistance:
         distance = (real_face_width * self.focal_length) / face_width_in_frame
         return distance
     
+    def normalize_distance(self, distance):
+        """
+        Normalize the distance to a value between 0 and 1 based on the min and max distances.
+        """
+        normalized_dist = (distance - self.min_dist) / (self.max_dist - self.min_dist)
+        # Clamp the value between 0 and 1
+        return max(0, min(normalized_dist, 1))
+
     def face_data(self, image):
         """
         Detects the face in the image and returns its width (in pixels).
@@ -58,7 +72,7 @@ class FindDistance:
     def estimate_distance_from_frame(self, frame):
         """
         Estimate the distance of the face in the given frame.
-        Returns the distance if a face is detected, otherwise returns None.
+        Returns the normalized distance if a face is detected, otherwise returns None.
         """
         # Detect face width in the current frame
         face_width_in_frame = self.face_data(frame)
@@ -66,41 +80,7 @@ class FindDistance:
         # If a face is detected, calculate the distance
         if face_width_in_frame != 0:
             distance = self.distance_finder(self.known_width, face_width_in_frame)
-            return distance
+            normalized_distance = self.normalize_distance(distance)
+            return normalized_distance
         return None
 
-if __name__ == "__main__":
-    # Create an instance of the FindDistance class
-    distance_finder = FindDistance(known_width=Known_width, focal_length=Focal_length)
-
-    # Initialize camera
-    cap = cv2.VideoCapture(0)
-
-    while True:
-        # Read frame from camera
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Estimate distance for the current frame
-        distance = distance_finder.estimate_distance_from_frame(frame)
-
-        # If distance is detected, display it on the frame
-        if distance is not None:
-            # Draw background for the text
-            cv2.line(frame, (30, 30), (230, 30), RED, 32)
-            cv2.line(frame, (30, 30), (230, 30), BLACK, 28)
-
-            # Display the estimated distance on the frame
-            cv2.putText(frame, f"Distance: {round(distance, 2)} CM", (30, 35), fonts, 0.6, GREEN, 2)
-
-        # Show the frame
-        cv2.imshow("Distance Estimation", frame)
-
-        # Exit if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    # Release the camera and close windows
-    cap.release()
-    cv2.destroyAllWindows()
