@@ -1,38 +1,44 @@
 import cv2
 import numpy as np
+import image_pyramind
 
-class MotionDetection:
-    def __init__(self, threshold):
-        self.previous_frame = None
-        self.threshold = threshold
+class MotionDetectionWithPyramid:
+    def __init__(self, levels=4):
+        self.previous_frame_pyramid = None
+        self.levels = levels
 
     def detect_motion(self, current_frame):
 
-        gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
-
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-        if self.previous_frame is None:
-            self.previous_frame = gray
+        current_pyramid = image_pyramind.ImagePyramid(current_frame, self.levels).build_gaussian_pyramid()
+  
+        if self.previous_frame_pyramid is None:
+            self.previous_frame_pyramid = current_pyramid
             return 0
 
-        frame_diff = cv2.absdiff(gray, self.previous_frame)
+        total_motion = 0
 
-        self.previous_frame = gray
+        for i in range(self.levels):
+            current_level = current_pyramid[i]
+            previous_level = self.previous_frame_pyramid[i]
 
-        _, thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
+            current_gray = cv2.cvtColor(current_level, cv2.COLOR_BGR2GRAY)
+            previous_gray = cv2.cvtColor(previous_level, cv2.COLOR_BGR2GRAY)
 
-        motion_pixels = np.sum(thresh > 0)
+            frame_diff = cv2.absdiff(current_gray, previous_gray)
 
-        motion_intensity = (motion_pixels / float(gray.size)) * 10  
+            _, thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
 
-        if motion_intensity < self.threshold:
-            motion_intensity = 0
-        
-        elif motion_intensity > 1:
-            motion_intensity = 1
+            motion_pixels = np.sum(thresh > 0)
 
-        return motion_intensity
+            motion_intensity = (motion_pixels / float(current_gray.size)) * 10
+
+            total_motion += motion_intensity
+
+        total_motion = min(total_motion / self.levels, 1)
+
+        self.previous_frame_pyramid = current_pyramid
+
+        return total_motion
 
     def show_image(self, image):
 
