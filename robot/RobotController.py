@@ -85,7 +85,7 @@ class RobotController:
         for t in range(milliseconds):
             time.sleep(0.001)
             
-            print(self.getObstacleDistance())
+            #print(self.getObstacleDistance())
             if(self.__leftMotor.getDirection() == MotorDirection.Forward and self.__rightMotor.getDirection() == MotorDirection.Forward): 
                 if(self.getObstacleDistance() < 0.35):
                     warningCount+=1

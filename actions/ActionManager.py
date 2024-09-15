@@ -31,5 +31,7 @@ class ActionManager:
             print(f"Action {actionName} not found")
             return
         
+        print(f"Action {actionName} is getting performed!")
+
         action.perform(self.__robot, self.__audioManager)
         self.__robot.stop()
