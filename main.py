@@ -8,6 +8,7 @@ import cv2
 from inputManager import InputManager
 from attentionCalculator import AttentionCalculator
 
+import numpy as np
 from create_pdf import create_pdf
 
 inputManager = InputManager()
@@ -25,6 +26,40 @@ def waitForButton():
     while not robot.isButton1Pressed():
             time.sleep(0.1)
 
+class QLearning:
+    def __init__(self, n_actions, learning_rate=0.1, discount_factor=0.95, exploration_rate=0.3):
+        self.n_actions = n_actions
+        self.q_table = np.zeros(n_actions)
+        self.lr = learning_rate
+        self.gamma = discount_factor
+        self.epsilon = exploration_rate
+        self.action_counts = np.zeros(n_actions)
+
+    def choose_action(self):
+        if np.random.random() < self.epsilon:
+            # Exploration: choose randomly, but favor less-chosen actions
+            probabilities = 1 / (self.action_counts + 1)
+            probabilities /= probabilities.sum()
+            return np.random.choice(self.n_actions, p=probabilities)
+        else:
+            # Exploitation: add small random noise to break ties randomly
+            noisy_q_values = self.q_table + np.random.normal(0, 0.01, self.n_actions)
+            return np.argmax(noisy_q_values)
+
+    def update(self, action, reward):
+        self.action_counts[action] += 1
+        best_next_q = np.max(self.q_table)
+        td_target = reward + self.gamma * best_next_q
+        td_error = td_target - self.q_table[action]
+        self.q_table[action] += self.lr * td_error
+
+    def decay_epsilon(self, decay_rate=0.9995):
+        self.epsilon = max(0.05, self.epsilon * decay_rate)  # Maintain a minimum exploration rate
+
+
+n_actions = 11  # Number of discrete choices
+agent = QLearning(n_actions)
+
 def runProgram():
     #actionManager.performAction("LookAround")
 
@@ -38,8 +73,22 @@ def runProgram():
 
     frame_count = 0
 
+    
+    possibleActions = ["Meow", "Bark", "Ring", "Horn", "Hello", "Welcome", "Lost", "Attention", "TailMotion", "LookAround", "CrazyRotate"] 
+    random.shuffle(possibleActions)
+    
+
     #while True:
-    for t in range(5):
+    for t in range(10):
+        action = agent.choose_action()
+
+        #randomAction = random.choice(possibleActions)
+        actionStr = possibleActions[action]
+
+            # Action
+
+        actionManager.performAction(actionStr)
+
         rawResults = []
         for step in range(35):
             ret, frame = cap.read()
@@ -71,12 +120,8 @@ def runProgram():
 
         # Decision
 
-        possibleActions = ["Meow", "Bark", "Ring", "Horn", "Hello", "Welcome", "Lost", "Attention", "TailMotion", "LookAround", "CrazyRotate"] 
-        randomAction = random.choice(possibleActions)
-
-            # Action
-
-        actionManager.performAction(randomAction)
+        agent.update(action, attention)
+   
 
 
     if frame_count > 0:
