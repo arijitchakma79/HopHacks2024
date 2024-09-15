@@ -2,6 +2,7 @@ from robot.RobotController import RobotController
 from audio.AudioManager import AudioManager
 from actions.ActionManager import ActionManager 
 import time
+import random
 
 import cv2
 from inputManager import InputManager
@@ -25,35 +26,43 @@ def waitForButton():
 def runProgram():
     #actionManager.performAction("LookAround")
 
-    #fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    #out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
 
-    while True:
+    #while True:
+    for t in range(1000):
         rawResults = []
-        for step in range(5):
+        for step in range(35):
             ret, frame = cap.read()
             if not ret:
                 continue
 
-            rawResults.append(inputManager.processFrame(frame))
+            r = inputManager.processFrame(frame)
+            rawResults.append(r)
 
-            #debugFrame = inputManager.showResults(frame, rawResults)
-            #out.write(debugFrame)
+            debugFrame = inputManager.showResults(frame, r)
+            out.write(debugFrame)
 
 
-        attentionCalculator.calculate(rawResults)
-
+        attention = attentionCalculator.calculate(rawResults)
+        print(attention)
 
         # Decision
 
-        # Action
+        possibleActions = ["Meow", "Bark", "Ring", "Horn", "Hello", "Welcome", "Lost", "Attention", "TailMotion", "LookAround", "CrazyRotate"] 
+        randomAction = random.choice(possibleActions)
 
-    #out.release()
+            # Action
+
+        actionManager.performAction(randomAction)
+
+    out.release()
 
 while True:
     waitForButton()
 
     robot.turnOnProgramLED()
+    #actionManager.performAction("LookAround")
     runProgram()
     robot.turnOffProgramLED()
     
