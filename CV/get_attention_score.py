@@ -7,6 +7,10 @@ def calculate_attention_score(normalized_distance, motion_value, face_detected):
     :param face_detected: 1 if a face is detected, -1 if not.
     :return: A score between 0 and 1 indicating how likely the user is paying attention.
     """
+    # If no face is detected, return 0 as the attention score
+    if face_detected == -1:
+        return 0  # No face detected, so no attention
+
     # Weights for each factor
     w_d = 0.4  # Weight for distance
     w_m = 0.4  # Weight for motion
