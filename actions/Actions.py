@@ -9,7 +9,7 @@ class Action_Meow(Action):
         return True
     
     def perform(self, robot, audio):
-        audio.play("meow.ogg")
+        audio.play("pay_attention.mp3", 0.5)
 
 class Action_StepForward(Action):
     def __init__(self):

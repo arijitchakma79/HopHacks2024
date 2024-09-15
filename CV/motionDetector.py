@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import image_pyramind
+from CV import image_pyramind
 
 class MotionDetectionWithPyramid:
     def __init__(self, levels=4):
