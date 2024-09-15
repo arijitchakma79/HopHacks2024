@@ -5,8 +5,10 @@ import time
 
 import cv2
 from inputManager import InputManager
+from attentionCalculator import AttentionCalculator
 
 inputManager = InputManager()
+attentionCalculator = AttentionCalculator()
 
 robot = RobotController()
 robot.turnOnPowerLED()
@@ -26,16 +28,21 @@ def runProgram():
     #fourcc = cv2.VideoWriter_fourcc(*'XVID')
     #out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
 
-    for step in range(200):
-        ret, frame = cap.read()
-        if not ret:
-            continue
+    while True:
+        rawResults = []
+        for step in range(5):
+            ret, frame = cap.read()
+            if not ret:
+                continue
 
-        rawResults = inputManager.processFrame(frame)
-        print(rawResults)
+            rawResults.append(inputManager.processFrame(frame))
 
-        #debugFrame = inputManager.showResults(frame, rawResults)
-        #out.write(debugFrame)
+            #debugFrame = inputManager.showResults(frame, rawResults)
+            #out.write(debugFrame)
+
+
+        attentionCalculator.calculate(rawResults)
+
 
         # Decision
 
