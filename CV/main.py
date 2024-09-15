@@ -1,7 +1,10 @@
 import cv2
-from distance_estimator import FindDistance  # Your distance estimation class
-from motionDetector import MotionDetectionWithPyramid  # Your motion detection class
-from detect_face import FaceDetector  # Your face detection class
+from distance_estimator import FindDistance  #  distance estimation class
+from motionDetector import MotionDetectionWithPyramid  # motion detection class
+from detect_face import FaceDetector  #  face detection class
+from create_pdf import create_pdf
+from get_attention_score import calculate_attention_score
+
 
 # Constants for distance estimation
 Known_width = 14.3  # Average face width in cm
@@ -19,6 +22,7 @@ cap = cv2.VideoCapture(0)
 
 # List to store attention scores
 attention_scores = []
+
 
 def process_frame(frame):
     """
@@ -45,40 +49,6 @@ def process_frame(frame):
 
     return results
 
-def calculate_attention_score(normalized_distance, motion_value, face_detected):
-    """
-    Calculate the likelihood that the user is paying attention based on normalized distance,
-    motion intensity, and face detection.
-    :param normalized_distance: Normalized distance value (0-1).
-    :param motion_value: Motion intensity value (0-1).
-    :param face_detected: 1 if a face is detected, -1 if not.
-    :return: A score between 0 and 1 indicating how likely the user is paying attention.
-    """
-    # If no face is detected, return 0 as the attention score
-    if face_detected == -1:
-        return 0  # No face detected, so no attention
-
-    # Weights for each factor
-    w_d = 0.4  # Weight for distance
-    w_m = 0.4  # Weight for motion
-    w_f = 0.2  # Weight for face detection
-
-    # Calculate the distance score (penalize if too far or too close)
-    D_score = 1 - abs(0.5 - normalized_distance) if normalized_distance is not None else 0
-
-    # Calculate the motion score (low motion means paying attention)
-    M_score = 1 - motion_value  # Less motion is better
-
-    # Face detection score
-    F_score = 1 if face_detected == 1 else 0
-
-    # Calculate the final attention score as a weighted sum
-    P_attention = (w_d * D_score) + (w_m * M_score) + (w_f * F_score)
-
-    # Ensure the score is between 0 and 1
-    P_attention = max(0, min(P_attention, 1))
-
-    return P_attention
 
 def show_results_on_frame(frame, results):
     """
@@ -97,6 +67,10 @@ def show_results_on_frame(frame, results):
 
 if __name__ == "__main__":
     total_attention_score = 0
+    total_motion_intensity = 0
+    face_detected_frames = 0
+    total_movements = 0
+
     frame_count = 0
 
     while True:
@@ -112,15 +86,25 @@ if __name__ == "__main__":
         attention_score = calculate_attention_score(
             results.get('normalized_distance'), results['motion_value'], results['face_detected']
         )
-        attention_scores.append(attention_score)
 
+        # Accumulate the attention score and other metrics
         total_attention_score += attention_score
+        total_motion_intensity += results['motion_value']
+
+        # Count face detected frames
+        if results['face_detected'] == 1:
+            face_detected_frames += 1
+
+        # Count movements when motion intensity exceeds a threshold (e.g., 0.3)
+        if results['motion_value'] > 0.3:
+            total_movements += 1
+
         frame_count += 1
 
-        # Display results on the frame
+        # Show the frame with annotations
         show_results_on_frame(frame, results)
 
-        # Show the frame with annotations
+        # Display frame
         cv2.imshow("Distance, Motion, and Attention Detection", frame)
 
         # Exit if 'q' is pressed
@@ -131,9 +115,21 @@ if __name__ == "__main__":
     cap.release()
     cv2.destroyAllWindows()
 
-    # Output the final average attention score when the program closes
+    # Output the final report when the program closes
     if frame_count > 0:
         avg_attention_score = total_attention_score / frame_count
-        print(f"Average Attention Score: {avg_attention_score:.2f}")
+        print(f"Average Attention Score: {avg_attention_score * 100:.2f}%")
+        
+        # Prepare data for the PDF report
+        report_data = {
+            'avg_attention_score': avg_attention_score,
+            'total_frames': frame_count,
+            'face_detected_frames': face_detected_frames,
+            'total_movements': total_movements,
+            'total_motion_intensity': total_motion_intensity
+        }
+
+        # Generate PDF report and save locally
+        create_pdf(report_data, filename="user_attention_summary_report.pdf")
     else:
         print("No frames processed.")
